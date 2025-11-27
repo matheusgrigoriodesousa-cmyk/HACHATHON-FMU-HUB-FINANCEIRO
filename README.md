@@ -11,7 +11,8 @@ Sistema de banco de dados relacional desenvolvido para o MVP de um Hub Financeir
 - [Diagrama Entidade-Relacionamento (DER)](#-diagrama-entidade-relacionamento-der)
 - [Estrutura do Banco de Dados](#-estrutura-do-banco-de-dados)
 - [Stored Procedures](#-stored-procedures)
-- 
+- [Triggers](#-Automação-e-Integridade(Triggers)
+)
 
 ---
 
