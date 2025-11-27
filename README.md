@@ -3,9 +3,10 @@
 ![SQL Server](https://img.shields.io/badge/Database-SQL_Server-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=for-the-badge)
 
-Sistema de banco de dados relacional desenvolvido para o MVP de um Hub Financeiro.
+## Documentação tecnica de banco de dados relacional desenvolvido para o MVP de um Hub Financeiro.
+___
 
-📋 Índice
+## 📋 Índice
 
 Sobre o Projeto
 
@@ -25,7 +26,8 @@ Como Executar o Projeto
 
 Diagrama Entidade-Relacionamento (DER)
 
-📖 Sobre o Projeto
+---
+## 📖 Sobre o Projeto
 
 Este banco de dados foi modelado na 3ª Forma Normal (3FN) para garantir integridade e performance. Ele gerencia:
 
@@ -37,7 +39,8 @@ Serviços: PIX, pagamentos de boletos, recargas e cashback.
 
 Produtos Financeiros: Empréstimos e seguros.
 
-🧠 Modelo Entidade-Relacionamento (MER)
+---
+## 🧠 Modelo Entidade-Relacionamento (MER)
 
 O modelo conceitual define as regras de negócio e como as entidades interagem:
 
@@ -55,19 +58,23 @@ Um Usuário pode contratar vários Seguros (1:N).
 
 Um Usuário pode solicitar vários Empréstimos (1:N).
 
-🗂 Estrutura do Banco de Dados
+---
+## 🗂 Estrutura do Banco de Dados
 
 O banco MVP_HubFinanceiro conta com tabelas estruturadas com chaves estrangeiras (FK) e restrições de verificação (CHECK) para garantir a regra de negócio diretamente no banco.
 
-⚙️ Stored Procedures (Automação)
+---
+## ⚙️ Stored Procedures (Automação)
 
 O diferencial deste projeto é que o saldo não é manipulado manualmente. Utilizamos Procedures para garantir que toda operação financeira reflita imediatamente no saldo da conta.
+---
 
-⚡ Automação e Integridade (Triggers)
+---
+## ⚡ Automação e Integridade (Triggers)
 
 O sistema utiliza Triggers Otimizados para garantir que o saldo da conta seja atualizado automaticamente sempre que uma operação é registrada. Isso evita inconsistências entre o histórico e o saldo atual.
 
-🔄 Operações que atualizam saldo automaticamente
+## 🔄 Operações que atualizam saldo automaticamente
 
 sp_registrar_transacao
 
@@ -91,7 +98,7 @@ sp_adicionar_cashback
 
 Credita o valor do benefício na conta.
 
-📋 Procedures de Leitura e Gestão
+## 📋 Procedures de Leitura e Gestão
 
 sp_criar_usuario / sp_listar_usuarios
 
@@ -127,7 +134,7 @@ EXEC sp_registrar_pix 1, 'ana@email.com', 'email', 'envio', 50.00;
 SELECT * FROM contas WHERE id_conta = 1;
 
 
-📊 Diagrama Entidade-Relacionamento (DER)
+## 📊 Diagrama Entidade-Relacionamento (DER)
 
 erDiagram
     USUARIOS ||--|{ CONTAS : possui
@@ -191,7 +198,7 @@ erDiagram
     }
 
 
-✒️ Autor
+## ✒️ Autor
 
 Matheus Grigorio de Sousa
 Desenvolvido como parte do estudo de Arquitetura de Banco de Dados e SQL Server.
