@@ -1,0 +1,548 @@
+CREATE DATABASE MVP_HubFinanceiro; -- criação do data base 
+GO
+
+USE MVP_HubFinanceiro; -- nome utilizado para o data base 
+GO
+
+SET NOCOUNT ON;
+GO
+
+-- Criação de tabelas 
+CREATE TABLE  usuarios(
+    id_usuario int IDENTITY (1,1)  PRIMARY KEY,
+    nome VARCHAR (100) NOT NULL,
+    email VARCHAR (150) NOT NULL UNIQUE,
+    senha_hash VARCHAR (255) NOT NULL,
+    data_criacao DATETIME DEFAULT GETDATE (),
+    ativo BIT DEFAULT 1
+);
+
+CREATE TABLE contas (
+    id_conta INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    saldo DECIMAL(18,2) DEFAULT 0 CHECK (saldo >= 0),
+    tipo_conta VARCHAR(30) NOT NULL CHECK (tipo_conta IN ('digital', 'corrente', 'poupanca')),
+    data_criacao DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT fk_contas_usuarios FOREIGN KEY (id_usuario)
+        REFERENCES usuarios(id_usuario)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE categorias (
+    id_categoria INT IDENTITY(1,1) PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL UNIQUE,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('entrada', 'saida')),
+    ativo BIT DEFAULT 1
+);
+
+CREATE TABLE transacoes (
+    id_transacao INT IDENTITY(1,1) PRIMARY KEY,
+    id_conta INT NOT NULL,
+    id_categoria INT NOT NULL,
+    valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
+    descricao VARCHAR(255),
+    data_transacao DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT fk_transacoes_contas FOREIGN KEY (id_conta)
+        REFERENCES contas(id_conta)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_transacoes_categorias FOREIGN KEY (id_categoria)
+        REFERENCES categorias(id_categoria)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE pix (
+    id_pix INT IDENTITY(1,1) PRIMARY KEY,
+    id_conta INT NOT NULL,
+    chave_destino VARCHAR(150) NOT NULL,
+    tipo_chave VARCHAR(20) NOT NULL CHECK (tipo_chave IN ('cpf', 'email', 'telefone', 'aleatoria')),
+    tipo_operacao VARCHAR(20) NOT NULL CHECK (tipo_operacao IN ('envio', 'recebimento')),
+    valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
+    data_pix DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT fk_pix_contas FOREIGN KEY (id_conta)
+        REFERENCES contas(id_conta)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE pagamentos (
+    id_pagamento INT IDENTITY(1,1) PRIMARY KEY,
+    id_conta INT NOT NULL,
+    codigo_barras VARCHAR(100) NOT NULL,
+    valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
+    status_pagamento VARCHAR(20) DEFAULT 'pendente'
+        CHECK (status_pagamento IN ('pendente', 'pago', 'cancelado')),
+    data_pagamento DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT fk_pagamentos_contas FOREIGN KEY (id_conta)
+        REFERENCES contas(id_conta)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE recargas (
+    id_recarga INT IDENTITY(1,1) PRIMARY KEY,
+    id_conta INT NOT NULL,
+    numero VARCHAR(20) NOT NULL,
+    operadora VARCHAR(50) NOT NULL,
+    valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
+    data_recarga DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT fk_recargas_contas FOREIGN KEY (id_conta)
+        REFERENCES contas(id_conta)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE cashback (
+    id_cashback INT IDENTITY(1,1) PRIMARY KEY,
+    id_conta INT NOT NULL,
+    origem VARCHAR(100) NOT NULL,
+    valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
+    data_credito DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT fk_cashback_contas FOREIGN KEY (id_conta)
+        REFERENCES contas(id_conta)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE seguros (
+    id_seguro INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    tipo_seguro VARCHAR(50) NOT NULL CHECK (tipo_seguro IN ('vida', 'residencial', 'celular', 'automovel')),
+    valor_mensal DECIMAL(18,2) NOT NULL CHECK (valor_mensal > 0),
+    data_contratacao DATETIME DEFAULT GETDATE(),
+    ativo BIT DEFAULT 1,
+
+    CONSTRAINT fk_seguros_usuarios FOREIGN KEY (id_usuario)
+        REFERENCES usuarios(id_usuario)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE emprestimos (
+    id_emprestimo INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
+    parcelas INT NOT NULL CHECK (parcelas > 0),
+    juros DECIMAL(5,2) NOT NULL CHECK (juros >= 0),
+    status_emprestimo VARCHAR(20) DEFAULT 'analise'
+        CHECK (status_emprestimo IN ('analise', 'aprovado', 'reprovado', 'quitado')),
+    data_solicitacao DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT fk_emprestimos_usuarios FOREIGN KEY (id_usuario)
+        REFERENCES usuarios(id_usuario)
+        ON DELETE CASCADE
+);
+
+INSERT INTO usuarios (nome, email, senha_hash, ativo) -- INSERINDO DADOS FICTICIOS
+VALUES
+('Matheus Silva', 'matheus@email.com', 'hash123', 1),
+('Ana Souza', 'ana@email.com', 'hash456', 1),
+('Carlos Lima', 'carlos@email.com', 'hash789', 1),
+('Julia Mendes', 'julia@email.com', 'hash101', 1),
+('Rafael Torres', 'rafael@email.com', 'hash202', 1);
+
+SELECT * FROM usuarios; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+
+INSERT INTO contas (id_usuario, saldo, tipo_conta) --- 
+VALUES
+(1, 1500.00, 'digital'),
+(1, 300.00, 'poupanca'),
+(2, 250.50, 'digital'),
+(3, 980.00, 'corrente'),
+(4, 120.00, 'digital'),
+(5, 5000.00, 'corrente');
+
+SELECT * FROM contas; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+
+INSERT INTO categorias (nome, tipo, ativo)
+VALUES
+('Salário', 'entrada', 1),
+('Transferência Recebida', 'entrada', 1),
+('Alimentação', 'saida', 1),
+('Transporte', 'saida', 1),
+('Lazer', 'saida', 1),
+('Pix Envio', 'saida', 1);
+
+SELECT * FROM categorias ; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+
+INSERT INTO transacoes (id_conta, id_categoria, valor, descricao)
+VALUES
+(1, 1, 2500.00, 'Salário mensal'),
+(1, 3, 45.90, 'Compra mercado'),
+(3, 4, 15.00, 'Ônibus'),
+(4, 5, 120.00, 'Cinema'),
+(6, 2, 300.00, 'Transferência recebida'),
+(2, 3, 80.00, 'Supermercado');
+
+SELECT * FROM transacoes ; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+
+INSERT INTO pix (id_conta, chave_destino, tipo_chave, tipo_operacao, valor)
+VALUES
+(1, '111.222.333-44', 'cpf', 'envio', 50.00),
+(3, 'contato@teste.com', 'email', 'envio', 20.00),
+(4, '+5511999999999', 'telefone', 'recebimento', 150.00),
+(6, 'chave-aleatoria-123', 'aleatoria', 'envio', 75.90),
+(2, '555.444.333-22', 'cpf', 'recebimento', 200.00);
+
+SELECT * FROM pix ; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+
+INSERT INTO pagamentos (id_conta, codigo_barras, valor, status_pagamento)
+VALUES
+(1, '123456789000111222333444555666777888999000', 80.00, 'pendente'),
+(2, '998877665544332211009988776655443322110099', 120.50, 'pago'),
+(3, '111111222222333333444444555555666666777777', 45.00, 'pago'),
+(4, '987654321000987654321000987654321000987654', 300.00, 'pendente'),
+(6, '555544443333222211110000999988887777666655', 150.00, 'cancelado');
+
+SELECT * FROM pagamentos ; -- CONFERINDO SE O DADOS SE ESTÃO CORRETO
+
+INSERT INTO recargas (id_conta, numero, operadora, valor)
+VALUES
+(1, '11988887777', 'Vivo', 15.00),
+(2, '11999998888', 'Claro', 20.00),
+(3, '21988886666', 'Tim', 30.00),
+(4, '11977776666', 'Oi', 25.00),
+(6, '21999995555', 'Vivo', 10.00);
+
+SELECT * FROM recargas; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
+
+INSERT INTO cashback (id_conta, origem, valor)
+VALUES
+(1, 'Compra Mercado', 2.50),
+(2, 'App Delivery', 1.20),
+(3, 'Combustível', 3.50),
+(4, 'Farmácia', 0.80),
+(6, 'Loja Online', 5.00);
+
+SELECT * FROM cashback; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
+
+INSERT INTO seguros (id_usuario, tipo_seguro, valor_mensal, ativo)
+VALUES
+(1, 'vida', 35.00, 1),
+(2, 'residencial', 55.00, 1),
+(3, 'celular', 12.50, 1),
+(4, 'automovel', 150.00, 1),
+(5, 'vida', 40.00, 1);
+
+SELECT * FROM  seguros; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
+
+INSERT INTO emprestimos (id_usuario, valor, parcelas, juros, status_emprestimo)
+VALUES
+(1, 1500.00, 12, 3.5, 'analise'),
+(2, 5000.00, 24, 2.8, 'aprovado'),
+(3, 800.00, 8, 4.0, 'reprovado'),
+(4, 2000.00, 10, 3.0, 'aprovado'),
+(5, 300.00, 3, 5.0, 'quitado');
+
+SELECT * FROM  emprestimos; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
+
+SELECT -- TRANSAÇÕES COMPLETAS
+    t.id_transacao,
+    u.nome AS usuario,
+    c.id_conta,
+    cat.nome AS categoria,
+    cat.tipo AS tipo_categoria,
+    t.valor,
+    t.descricao,
+    t.data_transacao
+FROM transacoes t
+JOIN contas c ON c.id_conta = t.id_conta
+JOIN usuarios u ON u.id_usuario = c.id_usuario
+JOIN categorias cat ON cat.id_categoria = t.id_categoria
+ORDER BY t.data_transacao DESC;
+
+SELECT -- VER TODOS OS PIX
+    p.id_pix,
+    u.nome AS usuario,
+    c.id_conta,
+    p.chave_destino,
+    p.tipo_chave,
+    p.tipo_operacao,
+    p.valor,
+    p.data_pix
+FROM pix p
+JOIN contas c ON c.id_conta = p.id_conta
+JOIN usuarios u ON u.id_usuario = c.id_usuario
+ORDER BY p.data_pix DESC;
+
+
+SELECT --- VER PAGAMENTOS BOLETOS
+    p.id_pagamento,
+    u.nome AS usuario,
+    p.codigo_barras,
+    p.valor,
+    p.status_pagamento,
+    p.data_pagamento
+FROM pagamentos p
+JOIN contas c ON c.id_conta = p.id_conta
+JOIN usuarios u ON u.id_usuario = c.id_usuario
+ORDER BY p.data_pagamento DESC;
+
+SELECT --  VER AS RECARGAS 
+    r.id_recarga,
+    u.nome AS usuario,
+    r.numero,
+    r.operadora,
+    r.valor,
+    r.data_recarga
+FROM recargas r
+JOIN contas c ON c.id_conta = r.id_conta
+JOIN usuarios u ON u.id_usuario = c.id_usuario
+ORDER BY r.data_recarga DESC;
+
+SELECT -- VER OS CASHBACK
+    cb.id_cashback,
+    u.nome AS usuario,
+    cb.origem,
+    cb.valor,
+    cb.data_credito
+FROM cashback cb
+JOIN contas c ON c.id_conta = cb.id_conta
+JOIN usuarios u ON u.id_usuario = c.id_usuario
+ORDER BY cb.data_credito DESC;
+
+SELECT -- VER OS SEGUROS
+    s.id_seguro,
+    u.nome AS usuario,
+    s.tipo_seguro,
+    s.valor_mensal,
+    s.data_contratacao,
+    s.ativo
+FROM seguros s
+JOIN usuarios u ON u.id_usuario = s.id_usuario;
+
+SELECT 
+    e.id_emprestimo,
+    u.nome AS usuario,
+    e.valor,
+    e.parcelas,
+    e.juros,
+    e.status_emprestimo,
+    e.data_solicitacao
+FROM emprestimos e
+JOIN usuarios u ON u.id_usuario = e.id_usuario;
+
+CREATE PROCEDURE sp_criar_usuario
+    @nome VARCHAR(100),
+    @email VARCHAR(150),
+    @senha_hash VARCHAR(255)
+AS
+BEGIN
+    INSERT INTO usuarios (nome, email, senha_hash)
+    VALUES (@nome, @email, @senha_hash);
+END;
+GO
+
+CREATE PROCEDURE sp_listar_usuarios
+AS
+BEGIN
+    SELECT * FROM usuarios WHERE ativo = 1;
+END;
+GO
+
+CREATE PROCEDURE sp_atualizar_usuario
+    @id_usuario INT,
+    @nome VARCHAR(100),
+    @email VARCHAR(150)
+AS
+BEGIN
+    UPDATE usuarios
+    SET nome = @nome,
+        email = @email
+    WHERE id_usuario = @id_usuario;
+END;
+GO
+
+CREATE PROCEDURE sp_desativar_usuario
+    @id_usuario INT
+AS
+BEGIN
+    UPDATE usuarios
+    SET ativo = 0
+    WHERE id_usuario = @id_usuario;
+END;
+GO
+
+CREATE PROCEDURE sp_criar_conta
+    @id_usuario INT,
+    @tipo_conta VARCHAR(30)
+AS
+BEGIN
+    INSERT INTO contas (id_usuario, tipo_conta)
+    VALUES (@id_usuario, @tipo_conta);
+END;
+GO
+
+CREATE PROCEDURE sp_listar_contas_usuario
+    @id_usuario INT
+AS
+BEGIN
+    SELECT * FROM contas WHERE id_usuario = @id_usuario;
+END;
+GO
+
+CREATE PROCEDURE sp_criar_categoria
+    @nome VARCHAR(50),
+    @tipo VARCHAR(20)
+AS
+BEGIN
+    INSERT INTO categorias (nome, tipo)
+    VALUES (@nome, @tipo);
+END;
+GO
+
+CREATE PROCEDURE sp_listar_categorias
+AS
+BEGIN
+    SELECT * FROM categorias WHERE ativo = 1;
+END;
+GO
+
+CREATE PROCEDURE sp_registrar_transacao
+    @id_conta INT,
+    @id_categoria INT,
+    @valor DECIMAL(18,2),
+    @descricao VARCHAR(255)
+AS
+BEGIN
+    DECLARE @tipo VARCHAR(20);
+
+    SELECT @tipo = tipo 
+    FROM categorias 
+    WHERE id_categoria = @id_categoria;
+
+    INSERT INTO transacoes (id_conta, id_categoria, valor, descricao)
+    VALUES (@id_conta, @id_categoria, @valor, @descricao);
+
+    IF @tipo = 'entrada'
+        UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+    ELSE
+        UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+END;
+GO
+
+CREATE PROCEDURE sp_extrato_conta
+    @id_conta INT
+AS
+BEGIN
+    SELECT 
+        t.id_transacao,
+        c.id_usuario,
+        t.valor,
+        t.descricao,
+        t.data_transacao,
+        cat.nome AS categoria,
+        cat.tipo AS tipo_categoria
+    FROM transacoes t
+    JOIN categorias cat ON cat.id_categoria = t.id_categoria
+    JOIN contas c ON c.id_conta = t.id_conta
+    WHERE t.id_conta = @id_conta
+    ORDER BY t.data_transacao DESC;
+END;
+GO
+
+CREATE PROCEDURE sp_registrar_pix
+    @id_conta INT,
+    @chave_destino VARCHAR(150),
+    @tipo_chave VARCHAR(20),
+    @tipo_operacao VARCHAR(20),
+    @valor DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO pix (id_conta, chave_destino, tipo_chave, tipo_operacao, valor)
+    VALUES (@id_conta, @chave_destino, @tipo_chave, @tipo_operacao, @valor);
+
+    IF @tipo_operacao = 'envio'
+        UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+    ELSE
+        UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+END;
+GO
+
+CREATE PROCEDURE sp_registrar_pagamento
+    @id_conta INT,
+    @codigo_barras VARCHAR(100),
+    @valor DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO pagamentos (id_conta, codigo_barras, valor, status_pagamento)
+    VALUES (@id_conta, @codigo_barras, @valor, 'pago');
+
+    UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+END;
+GO
+
+CREATE PROCEDURE sp_fazer_recarga
+    @id_conta INT,
+    @numero VARCHAR(20),
+    @operadora VARCHAR(50),
+    @valor DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO recargas (id_conta, numero, operadora, valor)
+    VALUES (@id_conta, @numero, @operadora, @valor);
+
+    UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+END;
+GO
+
+CREATE PROCEDURE sp_adicionar_cashback
+    @id_conta INT,
+    @origem VARCHAR(100),
+    @valor DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO cashback (id_conta, origem, valor)
+    VALUES (@id_conta, @origem, @valor);
+
+    UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+END;
+GO
+
+CREATE PROCEDURE sp_contratar_seguro
+    @id_usuario INT,
+    @tipo_seguro VARCHAR(50),
+    @valor_mensal DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO seguros (id_usuario, tipo_seguro, valor_mensal, ativo)
+    VALUES (@id_usuario, @tipo_seguro, @valor_mensal, 1);
+END;
+GO
+
+CREATE PROCEDURE sp_solicitar_emprestimo
+    @id_usuario INT,
+    @valor DECIMAL(18,2),
+    @parcelas INT,
+    @juros DECIMAL(5,2)
+AS
+BEGIN
+    INSERT INTO emprestimos (id_usuario, valor, parcelas, juros, status_emprestimo)
+    VALUES (@id_usuario, @valor, @parcelas, @juros, 'analise');
+END;
+GO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
