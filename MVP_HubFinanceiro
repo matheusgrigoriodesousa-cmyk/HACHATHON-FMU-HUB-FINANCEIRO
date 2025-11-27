@@ -1,42 +1,51 @@
-CREATE DATABASE MVP_HubFinanceiro; -- criação do data base 
+-- Cria o banco de dados para a aplicação Hub_Financeiro.
+CREATE DATABASE Hub_Financeiro;
 GO
 
-USE MVP_HubFinanceiro; -- nome utilizado para o data base 
+-- Define o banco de dados recém-criado como o contexto atual.
+USE Hub_Financeiro;
 GO
 
+-- Desativa a contagem de linhas afetadas para não serem exibidas após a execução dos comandos.
 SET NOCOUNT ON;
 GO
 
--- Criação de tabelas 
-CREATE TABLE  usuarios(
-    id_usuario int IDENTITY (1,1)  PRIMARY KEY,
-    nome VARCHAR (100) NOT NULL,
-    email VARCHAR (150) NOT NULL UNIQUE,
-    senha_hash VARCHAR (255) NOT NULL,
-    data_criacao DATETIME DEFAULT GETDATE (),
-    ativo BIT DEFAULT 1
+-- Tabela para armazenar as informações dos usuários.
+CREATE TABLE usuarios(
+    id_usuario INT IDENTITY (1,1) PRIMARY KEY, -- Chave primária com auto-incremento.
+    nome VARCHAR(100) NOT NULL, -- Nome do usuário.
+    email VARCHAR(150) NOT NULL UNIQUE, -- Email único para cada usuário.
+    senha_hash VARCHAR(255) NOT NULL, -- Senha criptografada.
+    data_criacao DATETIME DEFAULT GETDATE(), -- Data de criação do registro.
+    ativo BIT DEFAULT 1 -- Indica se o usuário está ativo (1) ou inativo (0).
 );
+GO
 
+-- Tabela para armazenar as contas bancárias dos usuários.
 CREATE TABLE contas (
     id_conta INT IDENTITY(1,1) PRIMARY KEY,
     id_usuario INT NOT NULL,
     saldo DECIMAL(18,2) DEFAULT 0 CHECK (saldo >= 0),
     tipo_conta VARCHAR(30) NOT NULL CHECK (tipo_conta IN ('digital', 'corrente', 'poupanca')),
     data_criacao DATETIME DEFAULT GETDATE(),
-
     CONSTRAINT fk_contas_usuarios FOREIGN KEY (id_usuario)
+        -- Chave estrangeira referenciando a tabela de usuários.
         REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+GO
 
 CREATE TABLE categorias (
+    -- Tabela para categorizar as transações (ex: Salário, Alimentação).
     id_categoria INT IDENTITY(1,1) PRIMARY KEY,
     nome VARCHAR(50) NOT NULL UNIQUE,
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('entrada', 'saida')),
     ativo BIT DEFAULT 1
 );
+GO
 
+-- Tabela para registrar todas as transações financeiras.
 CREATE TABLE transacoes (
     id_transacao INT IDENTITY(1,1) PRIMARY KEY,
     id_conta INT NOT NULL,
@@ -44,16 +53,18 @@ CREATE TABLE transacoes (
     valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
     descricao VARCHAR(255),
     data_transacao DATETIME DEFAULT GETDATE(),
-
     CONSTRAINT fk_transacoes_contas FOREIGN KEY (id_conta)
+        -- Chave estrangeira referenciando a tabela de contas.
         REFERENCES contas(id_conta)
         ON DELETE CASCADE,
-
     CONSTRAINT fk_transacoes_categorias FOREIGN KEY (id_categoria)
+        -- Chave estrangeira referenciando a tabela de categorias.
         REFERENCES categorias(id_categoria)
         ON DELETE CASCADE
 );
+GO
 
+-- Tabela para registrar as operações de PIX.
 CREATE TABLE pix (
     id_pix INT IDENTITY(1,1) PRIMARY KEY,
     id_conta INT NOT NULL,
@@ -62,12 +73,14 @@ CREATE TABLE pix (
     tipo_operacao VARCHAR(20) NOT NULL CHECK (tipo_operacao IN ('envio', 'recebimento')),
     valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
     data_pix DATETIME DEFAULT GETDATE(),
-
     CONSTRAINT fk_pix_contas FOREIGN KEY (id_conta)
+        -- Chave estrangeira referenciando a tabela de contas.
         REFERENCES contas(id_conta)
         ON DELETE CASCADE
 );
+GO
 
+-- Tabela para registrar pagamentos de contas (boletos).
 CREATE TABLE pagamentos (
     id_pagamento INT IDENTITY(1,1) PRIMARY KEY,
     id_conta INT NOT NULL,
@@ -76,12 +89,14 @@ CREATE TABLE pagamentos (
     status_pagamento VARCHAR(20) DEFAULT 'pendente'
         CHECK (status_pagamento IN ('pendente', 'pago', 'cancelado')),
     data_pagamento DATETIME DEFAULT GETDATE(),
-
     CONSTRAINT fk_pagamentos_contas FOREIGN KEY (id_conta)
+        -- Chave estrangeira referenciando a tabela de contas.
         REFERENCES contas(id_conta)
         ON DELETE CASCADE
 );
+GO
 
+-- Tabela para registrar recargas de celular.
 CREATE TABLE recargas (
     id_recarga INT IDENTITY(1,1) PRIMARY KEY,
     id_conta INT NOT NULL,
@@ -89,24 +104,28 @@ CREATE TABLE recargas (
     operadora VARCHAR(50) NOT NULL,
     valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
     data_recarga DATETIME DEFAULT GETDATE(),
-
     CONSTRAINT fk_recargas_contas FOREIGN KEY (id_conta)
+        -- Chave estrangeira referenciando a tabela de contas.
         REFERENCES contas(id_conta)
         ON DELETE CASCADE
 );
+GO
 
+-- Tabela para registrar os valores de cashback recebidos.
 CREATE TABLE cashback (
     id_cashback INT IDENTITY(1,1) PRIMARY KEY,
     id_conta INT NOT NULL,
     origem VARCHAR(100) NOT NULL,
     valor DECIMAL(18,2) NOT NULL CHECK (valor > 0),
     data_credito DATETIME DEFAULT GETDATE(),
-
     CONSTRAINT fk_cashback_contas FOREIGN KEY (id_conta)
+        -- Chave estrangeira referenciando a tabela de contas.
         REFERENCES contas(id_conta)
         ON DELETE CASCADE
 );
+GO
 
+-- Tabela para armazenar informações sobre seguros contratados pelos usuários.
 CREATE TABLE seguros (
     id_seguro INT IDENTITY(1,1) PRIMARY KEY,
     id_usuario INT NOT NULL,
@@ -114,12 +133,14 @@ CREATE TABLE seguros (
     valor_mensal DECIMAL(18,2) NOT NULL CHECK (valor_mensal > 0),
     data_contratacao DATETIME DEFAULT GETDATE(),
     ativo BIT DEFAULT 1,
-
     CONSTRAINT fk_seguros_usuarios FOREIGN KEY (id_usuario)
+        -- Chave estrangeira referenciando a tabela de usuários.
         REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE
 );
+GO
 
+-- Tabela para registrar solicitações e status de empréstimos.
 CREATE TABLE emprestimos (
     id_emprestimo INT IDENTITY(1,1) PRIMARY KEY,
     id_usuario INT NOT NULL,
@@ -129,13 +150,15 @@ CREATE TABLE emprestimos (
     status_emprestimo VARCHAR(20) DEFAULT 'analise'
         CHECK (status_emprestimo IN ('analise', 'aprovado', 'reprovado', 'quitado')),
     data_solicitacao DATETIME DEFAULT GETDATE(),
-
     CONSTRAINT fk_emprestimos_usuarios FOREIGN KEY (id_usuario)
+        -- Chave estrangeira referenciando a tabela de usuários.
         REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE
 );
+GO
 
-INSERT INTO usuarios (nome, email, senha_hash, ativo) -- INSERINDO DADOS FICTICIOS
+-- Inserção de dados de exemplo na tabela de usuários.
+INSERT INTO usuarios (nome, email, senha_hash, ativo)
 VALUES
 ('Matheus Silva', 'matheus@email.com', 'hash123', 1),
 ('Ana Souza', 'ana@email.com', 'hash456', 1),
@@ -143,9 +166,10 @@ VALUES
 ('Julia Mendes', 'julia@email.com', 'hash101', 1),
 ('Rafael Torres', 'rafael@email.com', 'hash202', 1);
 
-SELECT * FROM usuarios; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+SELECT * FROM usuarios; -- Confere os dados inseridos.
 
-INSERT INTO contas (id_usuario, saldo, tipo_conta) --- 
+-- Inserção de dados de exemplo na tabela de contas.
+INSERT INTO contas (id_usuario, saldo, tipo_conta)
 VALUES
 (1, 1500.00, 'digital'),
 (1, 300.00, 'poupanca'),
@@ -154,8 +178,9 @@ VALUES
 (4, 120.00, 'digital'),
 (5, 5000.00, 'corrente');
 
-SELECT * FROM contas; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+SELECT * FROM contas; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de categorias.
 INSERT INTO categorias (nome, tipo, ativo)
 VALUES
 ('Salário', 'entrada', 1),
@@ -165,8 +190,9 @@ VALUES
 ('Lazer', 'saida', 1),
 ('Pix Envio', 'saida', 1);
 
-SELECT * FROM categorias ; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+SELECT * FROM categorias ; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de transações.
 INSERT INTO transacoes (id_conta, id_categoria, valor, descricao)
 VALUES
 (1, 1, 2500.00, 'Salário mensal'),
@@ -176,8 +202,9 @@ VALUES
 (6, 2, 300.00, 'Transferência recebida'),
 (2, 3, 80.00, 'Supermercado');
 
-SELECT * FROM transacoes ; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+SELECT * FROM transacoes ; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de PIX.
 INSERT INTO pix (id_conta, chave_destino, tipo_chave, tipo_operacao, valor)
 VALUES
 (1, '111.222.333-44', 'cpf', 'envio', 50.00),
@@ -186,8 +213,9 @@ VALUES
 (6, 'chave-aleatoria-123', 'aleatoria', 'envio', 75.90),
 (2, '555.444.333-22', 'cpf', 'recebimento', 200.00);
 
-SELECT * FROM pix ; -- CONFERINDO O DADOS SE ESTÃO CORRETO
+SELECT * FROM pix ; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de pagamentos.
 INSERT INTO pagamentos (id_conta, codigo_barras, valor, status_pagamento)
 VALUES
 (1, '123456789000111222333444555666777888999000', 80.00, 'pendente'),
@@ -196,8 +224,9 @@ VALUES
 (4, '987654321000987654321000987654321000987654', 300.00, 'pendente'),
 (6, '555544443333222211110000999988887777666655', 150.00, 'cancelado');
 
-SELECT * FROM pagamentos ; -- CONFERINDO SE O DADOS SE ESTÃO CORRETO
+SELECT * FROM pagamentos ; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de recargas.
 INSERT INTO recargas (id_conta, numero, operadora, valor)
 VALUES
 (1, '11988887777', 'Vivo', 15.00),
@@ -206,8 +235,9 @@ VALUES
 (4, '11977776666', 'Oi', 25.00),
 (6, '21999995555', 'Vivo', 10.00);
 
-SELECT * FROM recargas; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
+SELECT * FROM recargas; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de cashback.
 INSERT INTO cashback (id_conta, origem, valor)
 VALUES
 (1, 'Compra Mercado', 2.50),
@@ -216,8 +246,9 @@ VALUES
 (4, 'Farmácia', 0.80),
 (6, 'Loja Online', 5.00);
 
-SELECT * FROM cashback; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
+SELECT * FROM cashback; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de seguros.
 INSERT INTO seguros (id_usuario, tipo_seguro, valor_mensal, ativo)
 VALUES
 (1, 'vida', 35.00, 1),
@@ -226,8 +257,9 @@ VALUES
 (4, 'automovel', 150.00, 1),
 (5, 'vida', 40.00, 1);
 
-SELECT * FROM  seguros; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
+SELECT * FROM  seguros; -- Confere os dados inseridos.
 
+-- Inserção de dados de exemplo na tabela de empréstimos.
 INSERT INTO emprestimos (id_usuario, valor, parcelas, juros, status_emprestimo)
 VALUES
 (1, 1500.00, 12, 3.5, 'analise'),
@@ -236,170 +268,82 @@ VALUES
 (4, 2000.00, 10, 3.0, 'aprovado'),
 (5, 300.00, 3, 5.0, 'quitado');
 
-SELECT * FROM  emprestimos; --  CONFERINDO SE O DADOS SE ESTÃO CORRETO
-
-SELECT -- TRANSAÇÕES COMPLETAS
-    t.id_transacao,
-    u.nome AS usuario,
-    c.id_conta,
-    cat.nome AS categoria,
-    cat.tipo AS tipo_categoria,
-    t.valor,
-    t.descricao,
-    t.data_transacao
-FROM transacoes t
-JOIN contas c ON c.id_conta = t.id_conta
-JOIN usuarios u ON u.id_usuario = c.id_usuario
-JOIN categorias cat ON cat.id_categoria = t.id_categoria
-ORDER BY t.data_transacao DESC;
-
-SELECT -- VER TODOS OS PIX
-    p.id_pix,
-    u.nome AS usuario,
-    c.id_conta,
-    p.chave_destino,
-    p.tipo_chave,
-    p.tipo_operacao,
-    p.valor,
-    p.data_pix
-FROM pix p
-JOIN contas c ON c.id_conta = p.id_conta
-JOIN usuarios u ON u.id_usuario = c.id_usuario
-ORDER BY p.data_pix DESC;
-
-
-SELECT --- VER PAGAMENTOS BOLETOS
-    p.id_pagamento,
-    u.nome AS usuario,
-    p.codigo_barras,
-    p.valor,
-    p.status_pagamento,
-    p.data_pagamento
-FROM pagamentos p
-JOIN contas c ON c.id_conta = p.id_conta
-JOIN usuarios u ON u.id_usuario = c.id_usuario
-ORDER BY p.data_pagamento DESC;
-
-SELECT --  VER AS RECARGAS 
-    r.id_recarga,
-    u.nome AS usuario,
-    r.numero,
-    r.operadora,
-    r.valor,
-    r.data_recarga
-FROM recargas r
-JOIN contas c ON c.id_conta = r.id_conta
-JOIN usuarios u ON u.id_usuario = c.id_usuario
-ORDER BY r.data_recarga DESC;
-
-SELECT -- VER OS CASHBACK
-    cb.id_cashback,
-    u.nome AS usuario,
-    cb.origem,
-    cb.valor,
-    cb.data_credito
-FROM cashback cb
-JOIN contas c ON c.id_conta = cb.id_conta
-JOIN usuarios u ON u.id_usuario = c.id_usuario
-ORDER BY cb.data_credito DESC;
-
-SELECT -- VER OS SEGUROS
-    s.id_seguro,
-    u.nome AS usuario,
-    s.tipo_seguro,
-    s.valor_mensal,
-    s.data_contratacao,
-    s.ativo
-FROM seguros s
-JOIN usuarios u ON u.id_usuario = s.id_usuario;
-
-SELECT 
-    e.id_emprestimo,
-    u.nome AS usuario,
-    e.valor,
-    e.parcelas,
-    e.juros,
-    e.status_emprestimo,
-    e.data_solicitacao
-FROM emprestimos e
-JOIN usuarios u ON u.id_usuario = e.id_usuario;
-
+GO
 CREATE PROCEDURE sp_criar_usuario
+    -- Procedimento para criar um novo usuário.
     @nome VARCHAR(100),
     @email VARCHAR(150),
     @senha_hash VARCHAR(255)
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se o email já está em uso.
+    IF EXISTS (SELECT 1 FROM usuarios WHERE email = @email)
+    BEGIN
+        RAISERROR ('Email já cadastrado.', 16, 1);
+        RETURN;
+    END;
+
     INSERT INTO usuarios (nome, email, senha_hash)
     VALUES (@nome, @email, @senha_hash);
+
+    -- Retorna o ID do usuário recém-criado.
+    SELECT SCOPE_IDENTITY() AS id_usuario_criado;
 END;
 GO
 
-CREATE PROCEDURE sp_listar_usuarios
-AS
-BEGIN
-    SELECT * FROM usuarios WHERE ativo = 1;
-END;
 GO
-
-CREATE PROCEDURE sp_atualizar_usuario
-    @id_usuario INT,
-    @nome VARCHAR(100),
-    @email VARCHAR(150)
-AS
-BEGIN
-    UPDATE usuarios
-    SET nome = @nome,
-        email = @email
-    WHERE id_usuario = @id_usuario;
-END;
-GO
-
-CREATE PROCEDURE sp_desativar_usuario
-    @id_usuario INT
-AS
-BEGIN
-    UPDATE usuarios
-    SET ativo = 0
-    WHERE id_usuario = @id_usuario;
-END;
-GO
-
+-- Procedimento para criar uma nova conta para um usuário.
 CREATE PROCEDURE sp_criar_conta
     @id_usuario INT,
+    @saldo DECIMAL(18,2),
     @tipo_conta VARCHAR(30)
 AS
 BEGIN
-    INSERT INTO contas (id_usuario, tipo_conta)
-    VALUES (@id_usuario, @tipo_conta);
+    SET NOCOUNT ON;
+
+    -- Verifica se o usuário existe.
+    IF NOT EXISTS (SELECT 1 FROM usuarios WHERE id_usuario = @id_usuario)
+    BEGIN
+        RAISERROR ('Usuário não encontrado.', 16, 1);
+        RETURN;
+    END;
+
+    INSERT INTO contas (id_usuario, saldo, tipo_conta)
+    VALUES (@id_usuario, @saldo, @tipo_conta);
+
+    -- Retorna o ID da conta recém-criada.
+    SELECT SCOPE_IDENTITY() AS id_conta_criada;
 END;
 GO
 
-CREATE PROCEDURE sp_listar_contas_usuario
-    @id_usuario INT
-AS
-BEGIN
-    SELECT * FROM contas WHERE id_usuario = @id_usuario;
-END;
 GO
-
+-- Procedimento para criar uma nova categoria de transação.
 CREATE PROCEDURE sp_criar_categoria
     @nome VARCHAR(50),
     @tipo VARCHAR(20)
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se a categoria já existe.
+    IF EXISTS (SELECT 1 FROM categorias WHERE nome = @nome)
+    BEGIN
+        RAISERROR ('Categoria já existe.', 16, 1);
+        RETURN;
+    END;
+
     INSERT INTO categorias (nome, tipo)
     VALUES (@nome, @tipo);
+
+    -- Retorna o ID da categoria recém-criada.
+    SELECT SCOPE_IDENTITY() AS id_categoria_criada;
 END;
 GO
 
-CREATE PROCEDURE sp_listar_categorias
-AS
-BEGIN
-    SELECT * FROM categorias WHERE ativo = 1;
-END;
 GO
-
+-- Procedimento para registrar uma nova transação e atualizar o saldo da conta.
 CREATE PROCEDURE sp_registrar_transacao
     @id_conta INT,
     @id_categoria INT,
@@ -407,42 +351,44 @@ CREATE PROCEDURE sp_registrar_transacao
     @descricao VARCHAR(255)
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se a conta existe.
+    IF NOT EXISTS (SELECT 1 FROM contas WHERE id_conta = @id_conta)
+    BEGIN
+        RAISERROR ('Conta inválida.', 16, 1);
+        RETURN;
+    END;
+
+    -- Obtém o tipo da categoria (entrada ou saída).
     DECLARE @tipo VARCHAR(20);
+    SELECT @tipo = tipo FROM categorias WHERE id_categoria = @id_categoria;
 
-    SELECT @tipo = tipo 
-    FROM categorias 
-    WHERE id_categoria = @id_categoria;
+    -- Verifica se a categoria existe.
+    IF (@tipo IS NULL)
+    BEGIN
+        RAISERROR ('Categoria não encontrada.', 16, 1);
+        RETURN;
+    END;
 
-    INSERT INTO transacoes (id_conta, id_categoria, valor, descricao)
-    VALUES (@id_conta, @id_categoria, @valor, @descricao);
+    -- Atualiza o saldo da conta com base no tipo da transação.
+    IF @tipo = 'saida'
+        UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
 
     IF @tipo = 'entrada'
         UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
-    ELSE
-        UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+
+    -- Insere a transação na tabela.
+    INSERT INTO transacoes (id_conta, id_categoria, valor, descricao)
+    VALUES (@id_conta, @id_categoria, @valor, @descricao);
+
+    -- Retorna o ID da transação criada.
+    SELECT SCOPE_IDENTITY() AS id_transacao_criada;
 END;
 GO
 
-CREATE PROCEDURE sp_extrato_conta
-    @id_conta INT
-AS
-BEGIN
-    SELECT 
-        t.id_transacao,
-        c.id_usuario,
-        t.valor,
-        t.descricao,
-        t.data_transacao,
-        cat.nome AS categoria,
-        cat.tipo AS tipo_categoria
-    FROM transacoes t
-    JOIN categorias cat ON cat.id_categoria = t.id_categoria
-    JOIN contas c ON c.id_conta = t.id_conta
-    WHERE t.id_conta = @id_conta
-    ORDER BY t.data_transacao DESC;
-END;
 GO
-
+-- Procedimento para registrar uma operação PIX e atualizar o saldo.
 CREATE PROCEDURE sp_registrar_pix
     @id_conta INT,
     @chave_destino VARCHAR(150),
@@ -451,67 +397,147 @@ CREATE PROCEDURE sp_registrar_pix
     @valor DECIMAL(18,2)
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se a conta existe.
+    IF NOT EXISTS (SELECT 1 FROM contas WHERE id_conta = @id_conta)
+    BEGIN
+        RAISERROR ('Conta inválida.', 16, 1);
+        RETURN;
+    END;
+
+    -- Atualiza o saldo da conta com base no tipo de operação PIX.
+    IF @tipo_operacao = 'envio'
+        UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+
+    IF @tipo_operacao = 'recebimento'
+        UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+
+    -- Insere o registro do PIX.
     INSERT INTO pix (id_conta, chave_destino, tipo_chave, tipo_operacao, valor)
     VALUES (@id_conta, @chave_destino, @tipo_chave, @tipo_operacao, @valor);
 
-    IF @tipo_operacao = 'envio'
-        UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
-    ELSE
-        UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+    -- Retorna o ID do PIX criado.
+    SELECT SCOPE_IDENTITY() AS id_pix_criado;
 END;
 GO
 
+GO
+-- Procedimento para registrar o pagamento de um boleto.
 CREATE PROCEDURE sp_registrar_pagamento
     @id_conta INT,
     @codigo_barras VARCHAR(100),
     @valor DECIMAL(18,2)
 AS
 BEGIN
-    INSERT INTO pagamentos (id_conta, codigo_barras, valor, status_pagamento)
-    VALUES (@id_conta, @codigo_barras, @valor, 'pago');
+    SET NOCOUNT ON;
 
+    -- Verifica se a conta existe.
+    IF NOT EXISTS (SELECT 1 FROM contas WHERE id_conta = @id_conta)
+    BEGIN
+        RAISERROR ('Conta inválida.', 16, 1);
+        RETURN;
+    END;
+
+    -- Deduz o valor do pagamento do saldo da conta.
     UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+
+    -- Insere o registro do pagamento com status 'pendente'.
+    INSERT INTO pagamentos (id_conta, codigo_barras, valor, status_pagamento)
+    VALUES (@id_conta, @codigo_barras, @valor, 'pendente');
+
+    -- Retorna o ID do pagamento criado.
+    SELECT SCOPE_IDENTITY() AS id_pagamento_criado;
 END;
 GO
 
-CREATE PROCEDURE sp_fazer_recarga
+GO
+-- Procedimento para registrar uma recarga de celular.
+CREATE PROCEDURE sp_registrar_recarga
     @id_conta INT,
     @numero VARCHAR(20),
     @operadora VARCHAR(50),
     @valor DECIMAL(18,2)
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se a conta existe.
+    IF NOT EXISTS (SELECT 1 FROM contas WHERE id_conta = @id_conta)
+    BEGIN
+        RAISERROR ('Conta inválida.', 16, 1);
+        RETURN;
+    END;
+
+    -- Deduz o valor da recarga do saldo da conta.
+    UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+
+    -- Insere o registro da recarga.
     INSERT INTO recargas (id_conta, numero, operadora, valor)
     VALUES (@id_conta, @numero, @operadora, @valor);
 
-    UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+    -- Retorna o ID da recarga criada.
+    SELECT SCOPE_IDENTITY() AS id_recarga_criada;
 END;
 GO
 
-CREATE PROCEDURE sp_adicionar_cashback
+GO
+-- Procedimento para registrar um crédito de cashback.
+CREATE PROCEDURE sp_registrar_cashback
     @id_conta INT,
     @origem VARCHAR(100),
     @valor DECIMAL(18,2)
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se a conta existe.
+    IF NOT EXISTS (SELECT 1 FROM contas WHERE id_conta = @id_conta)
+    BEGIN
+        RAISERROR ('Conta inválida.', 16, 1);
+        RETURN;
+    END;
+
+    -- Adiciona o valor do cashback ao saldo da conta.
+    UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+
+    -- Insere o registro do cashback.
     INSERT INTO cashback (id_conta, origem, valor)
     VALUES (@id_conta, @origem, @valor);
 
-    UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+    -- Retorna o ID do cashback criado.
+    SELECT SCOPE_IDENTITY() AS id_cashback_criado;
 END;
 GO
 
+GO
+-- Procedimento para registrar a contratação de um seguro.
 CREATE PROCEDURE sp_contratar_seguro
     @id_usuario INT,
     @tipo_seguro VARCHAR(50),
     @valor_mensal DECIMAL(18,2)
 AS
 BEGIN
-    INSERT INTO seguros (id_usuario, tipo_seguro, valor_mensal, ativo)
-    VALUES (@id_usuario, @tipo_seguro, @valor_mensal, 1);
+    SET NOCOUNT ON;
+
+    -- Verifica se o usuário existe.
+    IF NOT EXISTS (SELECT 1 FROM usuarios WHERE id_usuario = @id_usuario)
+    BEGIN
+        RAISERROR ('Usuário não encontrado.', 16, 1);
+        RETURN;
+    END;
+
+    -- Insere o registro do seguro.
+    INSERT INTO seguros (id_usuario, tipo_seguro, valor_mensal)
+    VALUES (@id_usuario, @tipo_seguro, @valor_mensal);
+
+    -- Retorna o ID do seguro criado.
+    SELECT SCOPE_IDENTITY() AS id_seguro_criado;
 END;
 GO
 
+GO
+-- Procedimento para solicitar um empréstimo.
 CREATE PROCEDURE sp_solicitar_emprestimo
     @id_usuario INT,
     @valor DECIMAL(18,2),
@@ -519,30 +545,253 @@ CREATE PROCEDURE sp_solicitar_emprestimo
     @juros DECIMAL(5,2)
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se o usuário existe.
+    IF NOT EXISTS (SELECT 1 FROM usuarios WHERE id_usuario = @id_usuario)
+    BEGIN
+        RAISERROR ('Usuário não encontrado.', 16, 1);
+        RETURN;
+    END;
+
+    -- Insere a solicitação de empréstimo com status 'analise'.
     INSERT INTO emprestimos (id_usuario, valor, parcelas, juros, status_emprestimo)
     VALUES (@id_usuario, @valor, @parcelas, @juros, 'analise');
+
+    -- Retorna o ID do empréstimo criado.
+    SELECT SCOPE_IDENTITY() AS id_emprestimo_criado;
 END;
 GO
 
+-- 1. Evitar saldo negativo
+-- Gatilho para impedir que o saldo de uma conta se torne negativo após uma atualização.
+CREATE TRIGGER trg_contas_saldo
+ON contas
+AFTER UPDATE
+AS
+BEGIN
+IF EXISTS (SELECT 1 FROM contas WHERE saldo < 0)
+BEGIN
+RAISERROR('Saldo não pode ser negativo!',16,1);
+ROLLBACK TRANSACTION;
+END
+END;
+GO
 
+-- 2. Atualizar saldo automaticamente em transações
+CREATE TRIGGER trg_transacoes_saldo
+ON transacoes
+AFTER INSERT
+AS
+BEGIN
+DECLARE @id_conta INT, @id_categoria INT, @valor DECIMAL(18,2), @tipo VARCHAR(20);
+SELECT @id_conta = id_conta, @id_categoria = id_categoria, @valor = valor FROM inserted;
+SELECT @tipo = tipo FROM categorias WHERE id_categoria = @id_categoria;
 
+IF @tipo = 'entrada'
+    UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+ELSE
+    UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
 
+IF (SELECT saldo FROM contas WHERE id_conta = @id_conta) < 0
+BEGIN
+    RAISERROR('Saldo insuficiente!',16,1);
+    ROLLBACK TRANSACTION;
+END
 
+END;
+GO
 
+-- 3. PIX - Gatilho para atualizar o saldo da conta após uma operação PIX.
+CREATE TRIGGER trg_pix_saldo
+ON pix
+AFTER INSERT
+AS
+BEGIN
+DECLARE @id_conta INT, @valor DECIMAL(18,2), @tipo_operacao VARCHAR(20);
+SELECT @id_conta = id_conta, @valor = valor, @tipo_operacao = tipo_operacao FROM inserted;
 
+IF @tipo_operacao = 'envio'
+    UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
+ELSE
+    UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
 
+IF (SELECT saldo FROM contas WHERE id_conta = @id_conta) < 0
+BEGIN
+    RAISERROR('Saldo insuficiente para PIX!',16,1);
+    ROLLBACK TRANSACTION;
+END
 
+END;
+GO
 
+-- 4. Cashback - Gatilho para adicionar o valor do cashback ao saldo da conta.
+CREATE TRIGGER trg_cashback_saldo
+ON cashback
+AFTER INSERT
+AS
+BEGIN
+DECLARE @id_conta INT, @valor DECIMAL(18,2);
+SELECT @id_conta = id_conta, @valor = valor FROM inserted;
+UPDATE contas SET saldo = saldo + @valor WHERE id_conta = @id_conta;
+END;
+GO
 
+-- 5. Pagamentos e Recargas - Gatilho para deduzir o valor de pagamentos do saldo.
+CREATE TRIGGER trg_pagamentos_recargas
+ON pagamentos
+AFTER INSERT
+AS
+BEGIN
+DECLARE @id_conta INT, @valor DECIMAL(18,2);
+SELECT @id_conta = id_conta, @valor = valor FROM inserted;
+UPDATE contas SET saldo = saldo - @valor WHERE id_conta = @id_conta;
 
+IF (SELECT saldo FROM contas WHERE id_conta = @id_conta) < 0
+BEGIN
+    RAISERROR('Saldo insuficiente para pagamento!',16,1);
+    ROLLBACK TRANSACTION;
+END
 
+END;
+GO
 
+USE Hub_Financeiro;
+GO
 
+-- =================================================================================
+-- SEÇÃO DE GATILHOS OTIMIZADOS
+-- Os gatilhos abaixo são versões mais eficientes e seguras, lidando com múltiplas linhas inseridas de uma vez.
+-- =================================================================================
 
+-- ==============================
+-- 1. Evitar saldo negativo nas contas
+-- ==============================
 
+CREATE TRIGGER trg_contas_saldo
+ON contas
+AFTER UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        WHERE i.saldo < 0
+    )
+    BEGIN
+        RAISERROR('Saldo não pode ser negativo!', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
 
+-- ==============================
+-- 2. Atualizar saldo automaticamente em transações
+-- ==============================
 
+CREATE TRIGGER trg_transacoes_saldo
+ON transacoes
+AFTER INSERT
+AS
+BEGIN
+    -- Atualiza saldos das contas afetadas com base no tipo de transação (entrada/saída).
+    UPDATE c
+    SET c.saldo = CASE 
+                    WHEN cat.tipo = 'entrada' THEN c.saldo + i.valor
+                    ELSE c.saldo - i.valor
+                  END
+    FROM contas c
+    INNER JOIN inserted i ON c.id_conta = i.id_conta
+    INNER JOIN categorias cat ON i.id_categoria = cat.id_categoria;
 
+    -- Verifica se alguma das atualizações resultou em saldo negativo.
+    IF EXISTS (
+        SELECT 1
+        FROM contas c
+        INNER JOIN inserted i ON c.id_conta = i.id_conta
+        WHERE c.saldo < 0
+    )
+    BEGIN
+        RAISERROR('Saldo insuficiente!', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
 
+-- ==============================
+-- 3. PIX
+-- ==============================
 
+CREATE TRIGGER trg_pix_saldo
+ON pix
+AFTER INSERT
+AS
+BEGIN
+    -- Atualiza o saldo das contas com base na operação PIX (envio/recebimento).
+    UPDATE c
+    SET c.saldo = CASE 
+                    WHEN i.tipo_operacao = 'envio' THEN c.saldo - i.valor
+                    ELSE c.saldo + i.valor
+                  END
+    FROM contas c
+    INNER JOIN inserted i ON c.id_conta = i.id_conta;
 
+    -- Verifica se a operação de envio resultou em saldo negativo.
+    IF EXISTS (
+        SELECT 1
+        FROM contas c
+        INNER JOIN inserted i ON c.id_conta = i.id_conta
+        WHERE c.saldo < 0
+    )
+    BEGIN
+        RAISERROR('Saldo insuficiente para PIX!', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
+
+-- ==============================
+-- 4. Cashback
+-- ==============================
+
+CREATE TRIGGER trg_cashback_saldo
+ON cashback
+AFTER INSERT
+AS
+BEGIN
+    -- Adiciona o valor do cashback ao saldo da conta correspondente.
+    UPDATE c
+    SET c.saldo = c.saldo + i.valor
+    FROM contas c
+    INNER JOIN inserted i ON c.id_conta = i.id_conta;
+END;
+GO
+
+-- ==============================
+-- 5. Pagamentos e Recargas
+-- ==============================
+
+CREATE TRIGGER trg_pagamentos_recargas
+ON pagamentos
+AFTER INSERT
+AS
+BEGIN
+    -- Subtrai o valor do pagamento do saldo da conta.
+    UPDATE c
+    SET c.saldo = c.saldo - i.valor
+    FROM contas c
+    INNER JOIN inserted i ON c.id_conta = i.id_conta;
+
+    -- Verifica se o pagamento resultou em saldo negativo.
+    IF EXISTS (
+        SELECT 1
+        FROM contas c
+        INNER JOIN inserted i ON c.id_conta = i.id_conta
+        WHERE c.saldo < 0
+    )
+    BEGIN
+        RAISERROR('Saldo insuficiente para pagamento!', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
